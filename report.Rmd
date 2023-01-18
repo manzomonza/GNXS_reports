@@ -1,0 +1,207 @@
+---
+title: "GNXS report"
+author: "M. Manzo"
+date: '2023-01-17'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include=FALSE}
+diroi = "/Users/manzo/Downloads/sgtest1"
+
+sfiles = list.files(path = doi, recursive = TRUE,
+                     full.names = TRUE, pattern = "Snvindel.tsv")
+
+xlsx_files = list.files(path = diroi, recursive = TRUE,
+                     full.names = TRUE, pattern = ".*combined_output.xlsx")
+
+prep_files = list.files(path = diroi, recursive = TRUE,
+                     full.names = TRUE, pattern = "prep_snv.txt")
+
+
+info_files = list.files(path = , recursive = TRUE,
+                     full.names = TRUE, pattern = "Info.csv")
+```
+
+
+```{r, include=FALSE}
+extract_info = function(filepath){
+  if(!grepl("RNA", filepath) & !grepl("watchdog", filepath)){
+  name = grep("Sample Name", readLines(filepath), value = TRUE)
+  name = grep("Assay Name", name, value = TRUE, invert = TRUE)
+  name = gsub("Sample Name,",'',name)
+  name = gsub(",",'',name)
+  ## 
+  tcc = grep("ellularity", readLines(filepath), value = TRUE)
+  tcc = gsub("%Cellularity,",'',tcc)
+  tcc = gsub(",",'',tcc)
+  ## 
+  cancer_type = grep("Cancer Type", readLines(filepath), value = TRUE)
+  cancer_type = gsub("Cancer Type,",'', cancer_type)
+  cancer_type = gsub(",",'', cancer_type)
+
+  return(data.frame(id = name,
+                    tcc = tcc,
+                    cancer_type = cancer_type,
+                    PW_gender = NA,
+                    CNV_gender = NA))
+  }
+}
+
+
+```
+
+```{r}
+readin_snvindel = function(filepath){
+  snv = readr::read_tsv(filepath)
+  snv = janitor::clean_names(snv)
+  #snv = dplyr::filter(snv, grepl("PRESENT",call ))
+  snv = dplyr::filter(snv, call != "ABSENT")
+  snv = dplyr::filter(snv, allele_frequency != 0)
+  snv = dplyr::mutate(snv, vartype = ifelse(grepl("=", amino_acid_change), "syn","nonsyn"))
+  snv$oncomine_variant_class =  as.character(snv$oncomine_variant_class)
+  snv$filepath = filepath
+  snv = snv |> dplyr::select(gene, nucleotide_change, amino_acid_change, allele_frequency, filepath, vartype)
+  return(snv)
+}
+
+readin_actList_entry = function(filepath){
+  entry = readxl::read_xlsx(filepath, sheet = "activityList_Entry")
+  entry = entry$activityList_Entry
+  
+  return(data.frame(filepath = filepath, mutation = entry))
+}
+
+readin_prepfiles = function(filepath){
+  prepsnv = readr::read_tsv(filepath)
+  prepsnv$filepath = filepath
+  prepsnv = prepsnv[which(colnames(prepsnv) %in% c("mtbp", "filepath"))]
+  prepsnv = dplyr::arrange(prepsnv, mtbp)
+  prepsnv = tidyr::nest(prepsnv,mutations=mtbp)
+  prepsnv = dplyr::mutate(prepsnv, mutations = paste(unlist(mutations), collapse = "; "))
+  return(prepsnv)
+}
+```
+
+
+```{r}
+sample_info = dplyr::bind_rows(lapply(info_files, extract_info))
+dplyr::bind_rows(lapply(xlsx_files, readin_actList_entry))
+
+
+snvs = lapply(sfiles, readin_snvindel)
+preps = lapply(prep_files, readin_prepfiles)
+DT::datatable(dplyr::bind_rows(preps))
+
+preps |>
+  dplyr::count(mtbp, sort = TRUE)
+
+```
+
+
+```{r}
+snvs = dplyr::bind_rows(snvs)  |> dplyr::filter(gene != "CDKN2A-DT")
+
+snvs = snvs |> tidyr::unite(gene, nucleotide_change, col = "combo_var", sep = "_" ) |> dplyr::select(-amino_acid_change)
+snvs = snvs |> dplyr::group_by(vartype) |> dplyr::group_split()
+nonsyn = snvs[[1]] |> tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) |>
+  dplyr::select(-vartype)
+
+syns = snvs[[2]] |> tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) |>
+  dplyr::select(-vartype)
+```
+
+# Replace largest substrings
+```{r}
+colnames(syns) = gsub("/Users/manzo/Downloads/drive-download-20230117T175037Z-001/", '', colnames(syns))
+colnames(syns) = gsub("WH_OncominePrecision-GX5-SolidTumor-DNA-w3.2.0_DIAGv2_OPJ2B_OPJ2B/Snvindel.tsv", '', colnames(syns))
+colnames(nonsyn) = gsub("/Users/manzo/Downloads/drive-download-20230117T175037Z-001/", '', colnames(nonsyn) )
+colnames(nonsyn) = gsub("WH_OncominePrecision-GX5-SolidTumor-DNA-w3.2.0_DIAGv2_OPJ2B_OPJ2B/Snvindel.tsv", '', colnames(nonsyn))
+```
+
+
+```{r}
+syns_mat = syns |> dplyr::select(-combo_var) |> as.matrix()
+nonsyn_mat = nonsyn |> dplyr::select(-combo_var) |> as.matrix()
+rownames(syns_mat) = syns$combo_var
+rownames(nonsyn_mat) = nonsyn$combo_var
+```
+
+
+```{r}
+df1 = data.frame(gene = letters[1:10],
+                var = 1:10,
+                sample = "a")
+
+df2 = data.frame(gene = letters[6:13],
+                var = 1:8,
+                sample = "b")
+
+dplyr::bind_rows(df2,df1) |> tidyr::pivot_wider(names_from = sample, values_from = var)
+
+
+
+jacc_distance = function(vec1, vec2){
+  jac_dis=1-length(intersect(vec1, vec2))/length(union(vec1, vec2))
+  return(jac_dis)
+}
+
+jacc_distance(letters[1:10], letters[6:10])
+jacc_distance(names(syns_mat[,1][!is.na(syns_mat[,1])]),
+              names(syns_mat[,2][!is.na(syns_mat[,2])]))
+
+jac_distance_mat = function(gene_AF_mat){
+  mat = matrix(NA, nrow = ncol(gene_AF_mat), ncol = ncol(gene_AF_mat))
+colnames(mat) = colnames(gene_AF_mat)
+rownames(mat) = colnames(gene_AF_mat)
+for (i in seq_along(colnames(gene_AF_mat))){
+  for(j in seq_along(colnames(gene_AF_mat))){
+    mat[i,j] = jacc_distance(gene_AF_mat[,i], gene_AF_mat[,j])
+    }
+  }
+ return(mat)
+}
+
+```
+
+
+# Syn
+```{r, fig.height=10, fig.width=7}
+test = syns_mat
+test = cbind(test,test[,8])
+test = cbind(test,test[,1])
+colnames(test)[9] = "cc"
+colnames(test)[10] = "cc1"
+test[,9][1] = NA
+test[,9][2] = NA
+test[,10][7] = NA
+test[,10][8] = NA
+
+test = syns_mat
+dasmamat = jac_distance_mat(test)
+mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
+ComplexHeatmap::Heatmap(jac_distance_mat(test), 
+                        col = viridis::viridis(10, option = "G"),
+                        cluster_columns = mat_hc,
+                        cluster_rows = mat_hc,
+                        show_row_names = FALSE)
+```
+
+# Nonsyn
+```{r, fig.height=10, fig.width=7}
+test = nonsyn_mat
+dasmamat = jac_distance_mat(test)
+mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
+ComplexHeatmap::Heatmap(test, 
+                        col = viridis::viridis(10, option = "G"),
+                        cluster_columns = mat_hc,
+                        cluster_rows = FALSE,
+                        show_row_names = FALSE)
+```
+
