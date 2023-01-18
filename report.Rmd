@@ -130,7 +130,7 @@ readr::write_tsv(preps, "Sample_variants_aggretation.tsv")
 
 
 ## Frequent variants
-```{r}
+```{r, eval=FALSE}
 DT::datatable(preps %>%
   dplyr::count(mtbp, sort = TRUE))
 ```
