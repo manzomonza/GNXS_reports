@@ -13,6 +13,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(optparse)
+library(magrittr)
+library(ggplot2)
+library(ggplotify)
+
 option_list = list(
   make_option(c("-d", "--dir"), type="character", default=NULL,
               help="directory containing clone summaries", metavar="character"))
@@ -24,7 +28,7 @@ diroi = opt$dir
 
 
 ```{r, include=FALSE}
-diroi = "/Users/manzo/Downloads/sgtest1"
+#diroi = "/Users/manzo/Downloads/sgtest1"
 
 sfiles = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = "Snvindel.tsv")
@@ -79,7 +83,8 @@ readin_snvindel = function(filepath){
   snv = dplyr::mutate(snv, vartype = ifelse(grepl("=", amino_acid_change), "syn","nonsyn"))
   snv$oncomine_variant_class =  as.character(snv$oncomine_variant_class)
   snv$filepath = filepath
-  snv = snv |> dplyr::select(gene, nucleotide_change, amino_acid_change, allele_frequency, filepath, vartype)
+  snv = snv %>% dplyr::select(gene, nucleotide_change, amino_acid_change, allele_frequency, filepath, vartype)
+  snv = snv %>% dplyr::filter(gene != "CDKN2A-DT") 
   return(snv)
 }
 
@@ -132,20 +137,20 @@ readr::write_tsv(preps, "Sample_variants_aggretation.tsv")
 
 ## Frequent variants
 ```{r}
-DT::datatable(preps |>
+DT::datatable(preps %>%
   dplyr::count(mtbp, sort = TRUE))
 ```
 
 
 ```{r}
-snvs = dplyr::bind_rows(snvs)  |> dplyr::filter(gene != "CDKN2A-DT")
+snvs = dplyr::bind_rows(snvs)  %>% 
 
-snvs = snvs |> tidyr::unite(gene, nucleotide_change, col = "combo_var", sep = "_" ) |> dplyr::select(-amino_acid_change)
-snvs = snvs |> dplyr::group_by(vartype) |> dplyr::group_split()
-nonsyn = snvs[[1]] |> tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) |>
+snvs = snvs %>% tidyr::unite(gene, nucleotide_change, col = "combo_var", sep = "_" ) %>% dplyr::select(-amino_acid_change)
+snvs = snvs %>% dplyr::group_by(vartype) %>% dplyr::group_split()
+nonsyn = snvs[[1]] %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) %>%
   dplyr::select(-vartype)
 
-syns = snvs[[2]] |> tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) |>
+syns = snvs[[2]] %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) %>%
   dplyr::select(-vartype)
 ```
 
@@ -156,8 +161,8 @@ syns = snvs[[2]] |> tidyr::pivot_wider(names_from = filepath, values_from = alle
 
 
 ```{r}
-syns_mat = syns |> dplyr::select(-combo_var) |> as.matrix()
-nonsyn_mat = nonsyn |> dplyr::select(-combo_var) |> as.matrix()
+syns_mat = syns %>% dplyr::select(-combo_var) %>% as.matrix()
+nonsyn_mat = nonsyn %>% dplyr::select(-combo_var) %>% as.matrix()
 rownames(syns_mat) = syns$combo_var
 rownames(nonsyn_mat) = nonsyn$combo_var
 ```
@@ -172,7 +177,7 @@ df2 = data.frame(gene = letters[6:13],
                 var = 1:8,
                 sample = "b")
 
-dplyr::bind_rows(df2,df1) |> tidyr::pivot_wider(names_from = sample, values_from = var)
+dplyr::bind_rows(df2,df1) %>% tidyr::pivot_wider(names_from = sample, values_from = var)
 
 jacc_distance(letters[1:10], letters[6:10])
 jacc_distance(names(syns_mat[,1][!is.na(syns_mat[,1])]),
@@ -222,4 +227,36 @@ ComplexHeatmap::Heatmap(nonsyn_mat,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
 ```
+
+## Variants -- Phred/Coverage scatter
+
+```{r}
+plot_prep_snvindel = function(filepath){
+  snv = readr::read_tsv(filepath)
+  snv = janitor::clean_names(snv)
+  #snv = dplyr::filter(snv, grepl("PRESENT",call ))
+  snv = dplyr::filter(snv, grepl("PRESENT", call))
+  snv = dplyr::filter(snv, allele_frequency != 0)
+  snv = snv %>% dplyr::filter(gene != "CDKN2A-DT") 
+  snv = dplyr::mutate(snv, vartype = ifelse(grepl("=", amino_acid_change), "syn","nonsyn"))
+  snv = dplyr::select(snv, gene, nucleotide_change,amino_acid_change,phred_qual_score,coverage)
+  snv$filepath = filepath
+  snv = snv %>% tidyr::unite(gene, nucleotide_change, col = "combo_var", sep = "_" )
+  return(snv)
+}
+plot_prep_table = dplyr::bind_rows(lapply(sfiles, plot_prep_snvindel))
+```
+
+```{r}
+p = plot_prep_table %>% 
+  ggplot(aes(phred_qual_score, coverage,group=1, text =combo_var)) + 
+  geom_point() + 
+  scale_x_log10() + 
+  scale_y_log10() + 
+  geom_hline(yintercept = 500) + 
+  geom_vline(xintercept = 50)
+
+ggplotly(p)
+```
+
 
