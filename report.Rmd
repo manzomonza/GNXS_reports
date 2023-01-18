@@ -124,7 +124,7 @@ dplyr::bind_rows(lapply(xlsx_files, readin_actList_entry))
 
 snvs = lapply(sfiles, readin_snvindel)
 preps = dplyr::bind_rows(lapply(prep_files, readin_prepfiles))
-
+readr::write_tsv(preps, "Sample_variants_aggretation.tsv")
 
 
 ```
