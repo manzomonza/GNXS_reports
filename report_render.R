@@ -1,5 +1,5 @@
 ## GNXS report render script
-
+## Add info here
 library(optparse)
 option_list = list(
   make_option(c("-d", "--dir"), type="character", default=NULL,
