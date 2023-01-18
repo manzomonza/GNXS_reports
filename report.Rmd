@@ -3,6 +3,8 @@ title: "GNXS report"
 author: "M. Manzo"
 date: '2023-01-17'
 output: html_document
+params:
+  diroi: ''
 editor_options: 
   chunk_output_type: console
 ---
@@ -12,18 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-library(optparse)
 library(magrittr)
 library(ggplot2)
 library(ggplotify)
-
-option_list = list(
-  make_option(c("-d", "--dir"), type="character", default=NULL,
-              help="directory containing clone summaries", metavar="character"))
-opt_parser = OptionParser(option_list=option_list);
-opt = parse_args(opt_parser)
-
-diroi = opt$dir
+diroi = params$diroi
 ```
 
 
@@ -258,5 +252,7 @@ p = plot_prep_table %>%
 
 ggplotly(p)
 ```
+
+
 
 
