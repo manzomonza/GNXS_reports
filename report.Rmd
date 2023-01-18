@@ -137,9 +137,9 @@ DT::datatable(preps %>%
 
 
 ```{r}
-snvs = dplyr::bind_rows(snvs)  %>% 
-
+snvs = dplyr::bind_rows(snvs)
 snvs = snvs %>% tidyr::unite(gene, nucleotide_change, col = "combo_var", sep = "_" ) %>% dplyr::select(-amino_acid_change)
+
 snvs = snvs %>% dplyr::group_by(vartype) %>% dplyr::group_split()
 nonsyn = snvs[[1]] %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) %>%
   dplyr::select(-vartype)
