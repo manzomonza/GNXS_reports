@@ -10,7 +10,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 ```{r}
@@ -18,6 +18,7 @@ library(magrittr)
 library(ggplot2)
 library(plotly)
 diroi = params$diroi
+
 ```
 
 
@@ -34,7 +35,7 @@ xlsx_files = grep("~",xlsx_files, value = TRUE,invert = TRUE)
 prep_files = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = "prep_snv.txt")
 
-info_files = list.files(path = , recursive = TRUE,
+info_files = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = "Info.csv")
 ```
 
@@ -62,7 +63,12 @@ extract_info = function(filepath){
                     CNV_gender = NA))
   }
 }
-
+assign_proper_name = function(filestring){
+  parsestring = dirname(filestring)
+  parsestring = rev(strsplit(parsestring, split = "/")[[1]])[1]
+  returnstring = stringr::str_extract(parsestring, pattern = "\\w{1,4}_.+?(?=_)")
+  return(returnstring)
+}
 
 ```
 
@@ -93,8 +99,8 @@ readin_prepfiles = function(filepath){
   prepsnv$filepath = filepath
   prepsnv = prepsnv[which(colnames(prepsnv) %in% c("mtbp", "filepath"))]
   prepsnv = dplyr::arrange(prepsnv, mtbp)
-  prepsnv = tidyr::nest(prepsnv,mutations=mtbp)
-  prepsnv = dplyr::mutate(prepsnv, mutations = paste(unlist(mutations), collapse = "; "))
+  prepsnv = tidyr::nest(prepsnv, variants=mtbp)
+  prepsnv = dplyr::mutate(prepsnv, variants = paste(unlist(variants), collapse = "; "))
   return(prepsnv)
 }
 
@@ -118,12 +124,11 @@ for (i in seq_along(colnames(gene_AF_mat))){
 
 ```{r}
 sample_info = dplyr::bind_rows(lapply(info_files, extract_info))
-readr::write_tsv(sample_info, "SampleInfoTable.tsv")
-dplyr::bind_rows(lapply(xlsx_files, readin_actList_entry))
+readr::write_tsv(sample_info, paste0(opt$dir,"/GNXS_QC_report/SampleInfoTable.tsv"))
 
 snvs = lapply(sfiles, readin_snvindel)
 preps = dplyr::bind_rows(lapply(prep_files, readin_prepfiles))
-readr::write_tsv(preps, "Sample_variants_aggretation.tsv")
+readr::write_tsv(preps,  paste0(opt$dir,"/GNXS_QC_report/Sample_variants_aggretation.tsv"))
 
 
 ```
@@ -159,6 +164,9 @@ syns_mat = syns %>% dplyr::select(-combo_var) %>% as.matrix()
 nonsyn_mat = nonsyn %>% dplyr::select(-combo_var) %>% as.matrix()
 rownames(syns_mat) = syns$combo_var
 rownames(nonsyn_mat) = nonsyn$combo_var
+
+colnames(syns_mat) = unname(sapply(colnames(syns_mat), assign_proper_name))
+colnames(nonsyn_mat) = unname(sapply(colnames(nonsyn_mat), assign_proper_name))
 ```
 
 
@@ -185,19 +193,22 @@ jacc_distance(names(syns_mat[,1][!is.na(syns_mat[,1])]),
 ## Syn -- sample distances
 ```{r, fig.height=10, fig.width=7}
 dasmamat = jac_distance_mat(syns_mat)
+
+
+
 mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
-ComplexHeatmap::Heatmap(jac_distance_mat(syns_mat), 
+pheatmap::pheatmap(jac_distance_mat(syns_mat), 
                         col = viridis::viridis(10, option = "G"),
-                        cluster_columns = mat_hc,
+                        cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = FALSE)
 ```
 
 ## Syn -- variants
 ```{r, fig.height=10, fig.width=7}
-ComplexHeatmap::Heatmap(syns_mat, 
+pheatmap::pheatmap(syns_mat, 
                         col = viridis::viridis(10, option = "G"),
-                        cluster_columns = mat_hc,
+                        cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
 ```
@@ -206,18 +217,18 @@ ComplexHeatmap::Heatmap(syns_mat,
 ```{r, fig.height=10, fig.width=7}
 dasmamat = jac_distance_mat(nonsyn_mat)
 mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
-ComplexHeatmap::Heatmap(dasmamat, 
+pheatmap::pheatmap(dasmamat, 
                         col = viridis::viridis(10, option = "G"),
-                        cluster_columns = mat_hc,
+                        cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = FALSE)
 ```
 
 ## Nonsyn -- variants
 ```{r, fig.height=10, fig.width=7}
-ComplexHeatmap::Heatmap(nonsyn_mat, 
+pheatmap::pheatmap(nonsyn_mat, 
                         col = viridis::viridis(10, option = "G"),
-                        cluster_columns = mat_hc,
+                        cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
 ```
