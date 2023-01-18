@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(magrittr)
 library(ggplot2)
-library(ggplotify)
+library(plotly)
 diroi = params$diroi
 ```
 
@@ -29,10 +29,10 @@ sfiles = list.files(path = diroi, recursive = TRUE,
 
 xlsx_files = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = ".*combined_output.xlsx")
+xlsx_files = grep("~",xlsx_files, value = TRUE,invert = TRUE)
 
 prep_files = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = "prep_snv.txt")
-
 
 info_files = list.files(path = , recursive = TRUE,
                      full.names = TRUE, pattern = "Info.csv")
