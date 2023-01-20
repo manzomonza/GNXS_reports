@@ -130,7 +130,6 @@ snvs = lapply(sfiles, readin_snvindel)
 preps = dplyr::bind_rows(lapply(prep_files, readin_prepfiles))
 readr::write_tsv(preps,  paste0(opt$dir,"/GNXS_QC_report/Sample_variants_aggretation.tsv"))
 
-
 ```
 
 
@@ -194,11 +193,9 @@ jacc_distance(names(syns_mat[,1][!is.na(syns_mat[,1])]),
 ```{r, fig.height=10, fig.width=7}
 dasmamat = jac_distance_mat(syns_mat)
 
-
-
 mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
 pheatmap::pheatmap(jac_distance_mat(syns_mat), 
-                        col = viridis::viridis(10, option = "G"),
+                        col = RColorBrewer::brewer.pal(9, "RdPu"),
                         cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = FALSE)
@@ -207,7 +204,7 @@ pheatmap::pheatmap(jac_distance_mat(syns_mat),
 ## Syn -- variants
 ```{r, fig.height=10, fig.width=7}
 pheatmap::pheatmap(syns_mat, 
-                        col = viridis::viridis(10, option = "G"),
+                        col = RColorBrewer::brewer.pal(9, "RdPu"),
                         cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
@@ -218,7 +215,7 @@ pheatmap::pheatmap(syns_mat,
 dasmamat = jac_distance_mat(nonsyn_mat)
 mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
 pheatmap::pheatmap(dasmamat, 
-                        col = viridis::viridis(10, option = "G"),
+                        col = RColorBrewer::brewer.pal(9, "RdPu"),
                         cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = FALSE)
@@ -227,7 +224,7 @@ pheatmap::pheatmap(dasmamat,
 ## Nonsyn -- variants
 ```{r, fig.height=10, fig.width=7}
 pheatmap::pheatmap(nonsyn_mat, 
-                        col = viridis::viridis(10, option = "G"),
+                        col = RColorBrewer::brewer.pal(9, "RdPu"),
                         cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
