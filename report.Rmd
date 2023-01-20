@@ -63,9 +63,10 @@ extract_info = function(filepath){
                     CNV_gender = NA))
   }
 }
-assign_proper_name = function(filestring){
+shorten_name = function(filestring){
   parsestring = dirname(filestring)
-  parsestring = rev(strsplit(parsestring, split = "/")[[1]])[1]
+  parsestring = strsplit(parsestring, split = "/")[[1]]
+  parsestring = grep("20[2|3][0-9]", parsestring, value = TRUE)
   returnstring = stringr::str_extract(parsestring, pattern = "\\w{1,4}_.+?(?=_)")
   return(returnstring)
 }
@@ -97,10 +98,12 @@ readin_actList_entry = function(filepath){
 readin_prepfiles = function(filepath){
   prepsnv = readr::read_tsv(filepath)
   prepsnv$filepath = filepath
-  prepsnv = prepsnv[which(colnames(prepsnv) %in% c("mtbp", "filepath"))]
-  prepsnv = dplyr::arrange(prepsnv, mtbp)
-  prepsnv = tidyr::nest(prepsnv, variants=mtbp)
-  prepsnv = dplyr::mutate(prepsnv, variants = paste(unlist(variants), collapse = "; "))
+  prepsnv = prepsnv[which(colnames(prepsnv) %in% c("gene","coding","one_AA", "filepath"))]
+  prepsnv = tidyr::unite(prepsnv,col = "variants", c(gene, one_AA, coding), sep = "_" )
+  prepsnv$variants = gsub("_NA_","_",  prepsnv$variants)
+  prepsnv$variants = gsub("_NA_","_",  prepsnv$variants)
+  #prepsnv = tidyr::nest(prepsnv, variants=mtbp)
+  #prepsnv = dplyr::mutate(prepsnv, variants = paste(unlist(variants), collapse = "; "))
   return(prepsnv)
 }
 
@@ -152,11 +155,6 @@ syns = snvs[[2]] %>% tidyr::pivot_wider(names_from = filepath, values_from = all
   dplyr::select(-vartype)
 ```
 
-# Replace largest substrings
-```{r}
-
-```
-
 
 ```{r}
 syns_mat = syns %>% dplyr::select(-combo_var) %>% as.matrix()
@@ -164,8 +162,8 @@ nonsyn_mat = nonsyn %>% dplyr::select(-combo_var) %>% as.matrix()
 rownames(syns_mat) = syns$combo_var
 rownames(nonsyn_mat) = nonsyn$combo_var
 
-colnames(syns_mat) = unname(sapply(colnames(syns_mat), assign_proper_name))
-colnames(nonsyn_mat) = unname(sapply(colnames(nonsyn_mat), assign_proper_name))
+colnames(syns_mat) = unname(sapply(colnames(syns_mat), shorten_name))
+colnames(nonsyn_mat) = unname(sapply(colnames(nonsyn_mat), shorten_name))
 ```
 
 
@@ -195,7 +193,7 @@ dasmamat = jac_distance_mat(syns_mat)
 
 mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
 pheatmap::pheatmap(jac_distance_mat(syns_mat), 
-                        col = RColorBrewer::brewer.pal(9, "RdPu"),
+                        col = viridis::viridis(10, option = "D"),
                         cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = FALSE)
@@ -204,7 +202,7 @@ pheatmap::pheatmap(jac_distance_mat(syns_mat),
 ## Syn -- variants
 ```{r, fig.height=10, fig.width=7}
 pheatmap::pheatmap(syns_mat, 
-                        col = RColorBrewer::brewer.pal(9, "RdPu"),
+                        col = rev(RColorBrewer::brewer.pal(9, "RdPu")),
                         cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
@@ -215,7 +213,7 @@ pheatmap::pheatmap(syns_mat,
 dasmamat = jac_distance_mat(nonsyn_mat)
 mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
 pheatmap::pheatmap(dasmamat, 
-                        col = RColorBrewer::brewer.pal(9, "RdPu"),
+                        col = viridis::viridis(10, option = "D"),
                         cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = FALSE)
@@ -224,7 +222,7 @@ pheatmap::pheatmap(dasmamat,
 ## Nonsyn -- variants
 ```{r, fig.height=10, fig.width=7}
 pheatmap::pheatmap(nonsyn_mat, 
-                        col = RColorBrewer::brewer.pal(9, "RdPu"),
+                        col = rev(RColorBrewer::brewer.pal(9, "RdPu")),
                         cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
