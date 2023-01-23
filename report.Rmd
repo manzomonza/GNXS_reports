@@ -23,7 +23,7 @@ diroi = params$diroi
 
 
 ```{r, include=FALSE}
-diroi = "/Users/manzom"
+diroi = "/Users/manzo/Downloads/sgtest0"
 sfiles = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = "Snvindel.tsv")
 
@@ -39,16 +39,8 @@ info_files = list.files(path = diroi, recursive = TRUE,
 ```
 
 
-```{r, include=FALSE }
-# FUNCTIONS
-vec1 = 1:10
-vec2 =  6:120
-
-jacc_distance(vec1, vec2)
-```
-
-
 ```{r}
+library(magrittr)
 sample_info = dplyr::bind_rows(lapply(info_files, extract_info))
 readr::write_tsv(sample_info, paste0(opt$dir,"/GNXS_QC_report/SampleInfoTable.tsv"))
 
@@ -60,9 +52,9 @@ readr::write_tsv(preps,  paste0(opt$dir,"/GNXS_QC_report/Sample_variants_aggreta
 
 
 ## Frequent variants
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 DT::datatable(preps %>%
-  dplyr::count(mtbp, sort = TRUE))
+  dplyr::count(variants, sort = TRUE))
 ```
 
 
@@ -110,10 +102,9 @@ jacc_distance(names(syns_mat[,1][!is.na(syns_mat[,1])]),
 
 ## Syn -- sample distances
 ```{r, fig.height=5, fig.width=5}
-dasmamat = jac_distance_mat(syns_mat)
-
-mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
-pheatmap::pheatmap(jac_distance_mat(syns_mat), 
+distance_mat = overlap_coef_mat(syns_mat)
+mat_hc = hclust(as.dist(distance_mat), method = "ward.D2")
+pheatmap::pheatmap(distance_mat, 
                         col = viridis::viridis(10, option = "D"),
                         cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
@@ -131,13 +122,15 @@ pheatmap::pheatmap(syns_mat,
 
 ## Nonsyn -- sample distances
 ```{r, fig.height=5, fig.width=5}
-dasmamat = jac_distance_mat(nonsyn_mat)
-mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
-pheatmap::pheatmap(dasmamat, 
+distance_mat = overlap_coef_mat(nonsyn_mat)
+mat_hc = hclust(as.dist(distance_mat), method = "ward.D2")
+pheatmap::pheatmap(distance_mat, 
                         col = viridis::viridis(10, option = "D"),
                         cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = FALSE)
+
+
 ```
 
 ## Nonsyn -- variants
