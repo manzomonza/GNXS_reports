@@ -202,7 +202,7 @@ pheatmap::pheatmap(jac_distance_mat(syns_mat),
 ## Syn -- variants
 ```{r, fig.height=10, fig.width=7}
 pheatmap::pheatmap(syns_mat, 
-                        col = rev(RColorBrewer::brewer.pal(9, "RdPu")),
+                        col = RColorBrewer::brewer.pal(9, "RdPu"),
                         cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
@@ -222,7 +222,7 @@ pheatmap::pheatmap(dasmamat,
 ## Nonsyn -- variants
 ```{r, fig.height=10, fig.width=7}
 pheatmap::pheatmap(nonsyn_mat, 
-                        col = rev(RColorBrewer::brewer.pal(9, "RdPu")),
+                        col = RColorBrewer::brewer.pal(9, "RdPu"),
                         cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
