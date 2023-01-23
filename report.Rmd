@@ -52,8 +52,9 @@ readr::write_tsv(preps,  paste0(opt$dir,"/GNXS_QC_report/Sample_variants_aggreta
 
 ## Frequent variants
 ```{r, eval=TRUE}
-DT::datatable(preps %>%
-  dplyr::count(variants, sort = TRUE))
+
+prep_insight = preps %>% dplyr::count(variants, sort = TRUE) %>% dplyr::filter(n >1)
+DT::datatable())
 ```
 
 
