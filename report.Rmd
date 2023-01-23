@@ -23,7 +23,6 @@ diroi = params$diroi
 
 
 ```{r, include=FALSE}
-diroi = "/Users/manzo/Downloads/sgtest0"
 sfiles = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = "Snvindel.tsv")
 
