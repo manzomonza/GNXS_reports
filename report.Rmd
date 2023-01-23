@@ -17,14 +17,13 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(magrittr)
 library(ggplot2)
 library(plotly)
+library(gnxsQC)
 diroi = params$diroi
-
 ```
 
 
 ```{r, include=FALSE}
-#diroi = "/Users/manzo/Downloads/sgtest1"
-
+diroi = "/Users/manzom"
 sfiles = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = "Snvindel.tsv")
 
@@ -40,88 +39,12 @@ info_files = list.files(path = diroi, recursive = TRUE,
 ```
 
 
-```{r, include=FALSE}
-extract_info = function(filepath){
-  if(!grepl("RNA", filepath) & !grepl("watchdog", filepath)){
-  name = grep("Sample Name", readLines(filepath), value = TRUE)
-  name = grep("Assay Name", name, value = TRUE, invert = TRUE)
-  name = gsub("Sample Name,",'',name)
-  name = gsub(",",'',name)
-  ## 
-  tcc = grep("ellularity", readLines(filepath), value = TRUE)
-  tcc = gsub("%Cellularity,",'',tcc)
-  tcc = gsub(",",'',tcc)
-  ## 
-  cancer_type = grep("Cancer Type", readLines(filepath), value = TRUE)
-  cancer_type = gsub("Cancer Type,",'', cancer_type)
-  cancer_type = gsub(",",'', cancer_type)
-
-  return(data.frame(id = name,
-                    tcc = tcc,
-                    cancer_type = cancer_type,
-                    PW_gender = NA,
-                    CNV_gender = NA))
-  }
-}
-shorten_name = function(filestring){
-  parsestring = dirname(filestring)
-  parsestring = strsplit(parsestring, split = "/")[[1]]
-  parsestring = grep("20[2|3][0-9]", parsestring, value = TRUE)
-  returnstring = stringr::str_extract(parsestring, pattern = "\\w{1,4}_.+?(?=_)")
-  return(returnstring)
-}
-
-```
-
 ```{r, include=FALSE }
 # FUNCTIONS
-readin_snvindel = function(filepath){
-  snv = readr::read_tsv(filepath)
-  snv = janitor::clean_names(snv)
-  #snv = dplyr::filter(snv, grepl("PRESENT",call ))
-  snv = dplyr::filter(snv, call != "ABSENT")
-  snv = dplyr::filter(snv, allele_frequency != 0)
-  snv = dplyr::mutate(snv, vartype = ifelse(grepl("=", amino_acid_change), "syn","nonsyn"))
-  snv$oncomine_variant_class =  as.character(snv$oncomine_variant_class)
-  snv$filepath = filepath
-  snv = snv %>% dplyr::select(gene, nucleotide_change, amino_acid_change, allele_frequency, filepath, vartype)
-  snv = snv %>% dplyr::filter(gene != "CDKN2A-DT") 
-  return(snv)
-}
+vec1 = 1:10
+vec2 =  6:120
 
-readin_actList_entry = function(filepath){
-  entry = readxl::read_xlsx(filepath, sheet = "activityList_Entry")
-  entry = entry$activityList_Entry
-  return(data.frame(filepath = filepath, mutation = entry))
-}
-
-readin_prepfiles = function(filepath){
-  prepsnv = readr::read_tsv(filepath)
-  prepsnv$filepath = filepath
-  prepsnv = prepsnv[which(colnames(prepsnv) %in% c("gene","coding","one_AA", "filepath"))]
-  prepsnv = tidyr::unite(prepsnv,col = "variants", c(gene, one_AA, coding), sep = "_" )
-  prepsnv$variants = gsub("_NA_","_",  prepsnv$variants)
-  prepsnv$variants = gsub("_NA_","_",  prepsnv$variants)
-  #prepsnv = tidyr::nest(prepsnv, variants=mtbp)
-  #prepsnv = dplyr::mutate(prepsnv, variants = paste(unlist(variants), collapse = "; "))
-  return(prepsnv)
-}
-
-jacc_distance = function(vec1, vec2){
-  jac_dis=1-length(intersect(vec1, vec2))/length(union(vec1, vec2))
-  return(jac_dis)
-}
-jac_distance_mat = function(gene_AF_mat){
-  mat = matrix(NA, nrow = ncol(gene_AF_mat), ncol = ncol(gene_AF_mat))
-colnames(mat) = colnames(gene_AF_mat)
-rownames(mat) = colnames(gene_AF_mat)
-for (i in seq_along(colnames(gene_AF_mat))){
-  for(j in seq_along(colnames(gene_AF_mat))){
-    mat[i,j] = jacc_distance(gene_AF_mat[,i], gene_AF_mat[,j])
-    }
-  }
- return(mat)
-}
+jacc_distance(vec1, vec2)
 ```
 
 
