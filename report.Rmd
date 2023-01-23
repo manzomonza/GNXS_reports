@@ -182,13 +182,11 @@ jacc_distance(letters[1:10], letters[6:10])
 jacc_distance(names(syns_mat[,1][!is.na(syns_mat[,1])]),
               names(syns_mat[,2][!is.na(syns_mat[,2])]))
 
-
-
 ```
 
 
 ## Syn -- sample distances
-```{r, fig.height=10, fig.width=7}
+```{r, fig.height=5, fig.width=5}
 dasmamat = jac_distance_mat(syns_mat)
 
 mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
@@ -209,7 +207,7 @@ pheatmap::pheatmap(syns_mat,
 ```
 
 ## Nonsyn -- sample distances
-```{r, fig.height=10, fig.width=7}
+```{r, fig.height=5, fig.width=5}
 dasmamat = jac_distance_mat(nonsyn_mat)
 mat_hc = hclust(as.dist(dasmamat), method = "ward.D2")
 pheatmap::pheatmap(dasmamat, 
