@@ -57,7 +57,7 @@ DT::datatable(prep_insight)
 ```
 
 
-```{r}
+```{r, include=FALSE, eval=FALSE}
 snvs = dplyr::bind_rows(snvs)
 snvs = snvs %>% tidyr::unite(gene, nucleotide_change, col = "combo_var", sep = "_" ) %>% dplyr::select(-amino_acid_change)
 
@@ -67,21 +67,29 @@ nonsyn = snvs[[1]] %>% tidyr::pivot_wider(names_from = filepath, values_from = a
 
 syns = snvs[[2]] %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) %>%
   dplyr::select(-vartype)
+
+snvs = snvs %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency) %>%
+  dplyr::select(-vartype)
+
+
 ```
 
 
-```{r}
+```{r, include=FALSE, eval=FALSE}
+snvs_mat = snvs %>% dplyr::select(-combo_var) %>% as.matrix()
 syns_mat = syns %>% dplyr::select(-combo_var) %>% as.matrix()
 nonsyn_mat = nonsyn %>% dplyr::select(-combo_var) %>% as.matrix()
-rownames(syns_mat) = syns$combo_var
+rownames(snvs_mat) = snvs$combo_var
+rownames(syns_mat) = syns_mat$combo_var
 rownames(nonsyn_mat) = nonsyn$combo_var
 
+colnames(snvs_mat) = unname(sapply(colnames(snvs_mat), shorten_name))
 colnames(syns_mat) = unname(sapply(colnames(syns_mat), shorten_name))
 colnames(nonsyn_mat) = unname(sapply(colnames(nonsyn_mat), shorten_name))
 ```
 
 
-```{r, include=FALSE, echo=FALSE}
+```{r, include=FALSE, echo=FALSE, eval=FALSE}
 df1 = data.frame(gene = letters[1:10],
                 var = 1:10,
                 sample = "a")
@@ -99,9 +107,10 @@ jacc_distance(names(syns_mat[,1][!is.na(syns_mat[,1])]),
 ```
 
 
+```{r, fig.height=5, fig.width=5, eval=FALSE}
 ## Syn -- sample distances
-```{r, fig.height=5, fig.width=5}
-distance_mat = overlap_coef_mat(syns_mat)
+
+distance_mat = overlap_coef_mat(tdf)
 mat_hc = hclust(as.dist(distance_mat), method = "ward.D2")
 pheatmap::pheatmap(distance_mat, 
                         col = viridis::viridis(10, option = "D"),
@@ -110,17 +119,25 @@ pheatmap::pheatmap(distance_mat,
                         show_row_names = FALSE)
 ```
 
+```{r, fig.height=10, fig.width=7, eval=FALSE}
 ## Syn -- variants
-```{r, fig.height=10, fig.width=7}
-pheatmap::pheatmap(syns_mat, 
+
+tdf = cbind(snvs_mat, snvs_mat[,1])
+tdf[1,9] = NA
+tdf[2,9] = NA
+distance_mat = overlap_coef_mat(tdf)
+mat_hc = hclust(as.dist(distance_mat), method = "ward.D2")
+
+pheatmap::pheatmap(tdf, 
                         col = RColorBrewer::brewer.pal(9, "RdPu"),
                         cluster_cols = mat_hc,
                         cluster_rows = FALSE,
                         show_row_names = TRUE)
 ```
 
+```{r, fig.height=5, fig.width=5, eval=FALSE}
 ## Nonsyn -- sample distances
-```{r, fig.height=5, fig.width=5}
+
 distance_mat = overlap_coef_mat(nonsyn_mat)
 mat_hc = hclust(as.dist(distance_mat), method = "ward.D2")
 pheatmap::pheatmap(distance_mat, 
@@ -132,8 +149,9 @@ pheatmap::pheatmap(distance_mat,
 
 ```
 
+```{r, fig.height=10, fig.width=7, eval=FALSE}
 ## Nonsyn -- variants
-```{r, fig.height=10, fig.width=7}
+
 pheatmap::pheatmap(nonsyn_mat, 
                         col = RColorBrewer::brewer.pal(9, "RdPu"),
                         cluster_cols = mat_hc,
@@ -141,7 +159,6 @@ pheatmap::pheatmap(nonsyn_mat,
                         show_row_names = TRUE)
 ```
 
-## Variants -- Phred/Coverage scatter
 
 ```{r}
 plot_prep_snvindel = function(filepath){
@@ -152,14 +169,50 @@ plot_prep_snvindel = function(filepath){
   snv = dplyr::filter(snv, allele_frequency != 0)
   snv = snv %>% dplyr::filter(gene != "CDKN2A-DT") 
   snv = dplyr::mutate(snv, vartype = ifelse(grepl("=", amino_acid_change), "syn","nonsyn"))
-  snv = dplyr::select(snv, gene, nucleotide_change,amino_acid_change,phred_qual_score,coverage)
+  snv = dplyr::select(snv, gene, nucleotide_change,amino_acid_change,phred_qual_score,coverage, allele_frequency)
   snv$filepath = filepath
-  snv = snv %>% tidyr::unite(gene, nucleotide_change, col = "combo_var", sep = "_" )
+  snv = snv %>% tidyr::unite(gene,amino_acid_change, nucleotide_change, col = "combo_var", sep = "_" )
   return(snv)
 }
 plot_prep_table = dplyr::bind_rows(lapply(sfiles, plot_prep_snvindel))
+
+plot_prep_table$combo_var = gsub("_p\\.\\?",'',plot_prep_table$combo_var)
+
+plot_prep_table$filepath = sapply(plot_prep_table$filepath, shorten_name)
+
+af_mat = plot_prep_table |> dplyr::select(-phred_qual_score, -coverage) |> tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
+
+af.mat = af_mat[,-1] |> as.matrix()
+rownames(af.mat) = af_mat$combo_var
 ```
 
+## Clustering of samples
+```{r}
+na_vector = rowMeans(af.mat)
+mat_hc = overlap_coef_mat(af.mat[is.na(na_vector),])
+mat_hc = hclust(as.dist(mat_hc), method = "ward.D2")
+```
+
+## Sample distance matrix
+```{r}
+pheatmap::pheatmap(overlap_coef_mat(af.mat[is.na(na_vector),]), 
+                        col = viridis::viridis(10, option = "D"),
+                        cluster_cols = mat_hc,
+                        cluster_rows = mat_hc,
+                        show_row_names = TRUE)
+```
+
+## Allele frequency
+```{r, fig.height=10}
+pheatmap::pheatmap(af.mat[is.na(na_vector),], 
+                        col = RColorBrewer::brewer.pal(9, "RdPu"),
+                        cluster_cols = mat_hc,
+                        cluster_rows = FALSE,
+                        show_row_names = TRUE)
+
+```
+
+## Coverage / Phred score
 ```{r}
 p = plot_prep_table %>% 
   ggplot(aes(phred_qual_score, coverage,group=1, text =combo_var)) + 
