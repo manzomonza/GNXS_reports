@@ -180,9 +180,9 @@ plot_prep_table$combo_var = gsub("_p\\.\\?",'',plot_prep_table$combo_var)
 
 plot_prep_table$filepath = sapply(plot_prep_table$filepath, shorten_name)
 
-af_mat = plot_prep_table |> dplyr::select(-phred_qual_score, -coverage) |> tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
+af_mat = plot_prep_table %>% dplyr::select(-phred_qual_score, -coverage) %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
 
-af.mat = af_mat[,-1] |> as.matrix()
+af.mat = af_mat[,-1] %>% as.matrix()
 rownames(af.mat) = af_mat$combo_var
 ```
 
