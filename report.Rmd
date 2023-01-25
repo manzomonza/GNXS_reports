@@ -23,6 +23,7 @@ diroi = params$diroi
 
 
 ```{r, include=FALSE}
+#diroi = '/Users/manzo/Downloads/sgtest0'
 sfiles = list.files(path = diroi, recursive = TRUE,
                      full.names = TRUE, pattern = "Snvindel.tsv")
 
@@ -165,7 +166,8 @@ plot_prep_snvindel = function(filepath){
   snv = readr::read_tsv(filepath)
   snv = janitor::clean_names(snv)
   #snv = dplyr::filter(snv, grepl("PRESENT",call ))
-  snv = dplyr::filter(snv, grepl("PRESENT", call))
+  #snv = dplyr::filter(snv, grepl("PRESENT", call))
+  snv = dplyr::filter(snv, call != "ABSENT")
   snv = dplyr::filter(snv, allele_frequency != 0)
   snv = snv %>% dplyr::filter(gene != "CDKN2A-DT") 
   snv = dplyr::mutate(snv, vartype = ifelse(grepl("=", amino_acid_change), "syn","nonsyn"))
@@ -182,7 +184,7 @@ plot_prep_table$filepath = sapply(plot_prep_table$filepath, shorten_name)
 
 af_mat = plot_prep_table %>% dplyr::select(-phred_qual_score, -coverage) %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
 
-af.mat = af_mat[,-1] %>% as.matrix()
+af.mat = dplyr::select(af_mat, where(is.numeric)) %>% as.matrix()
 rownames(af.mat) = af_mat$combo_var
 ```
 
