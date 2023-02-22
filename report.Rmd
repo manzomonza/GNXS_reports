@@ -203,8 +203,8 @@ rownames(af.mat) = af_mat$combo_var
 
 ## Clustering of samples
 ```{r}
-na_vector = rowMeans(dataframeme)
-mat_hc = overlap_coef_mat(dataframeme[is.na(na_vector),])
+na_vector = rowMeans(af.mat)
+mat_hc = overlap_coef_mat(af.mat[is.na(na_vector),])
 mat_hc = hclust(as.dist(mat_hc), method = "ward.D2")
 ```
 
