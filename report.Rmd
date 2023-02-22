@@ -196,7 +196,7 @@ plot_prep_table$allele_frequency = as.numeric(plot_prep_table$allele_frequency)
 af_mat = plot_prep_table %>% dplyr::select(-phred_qual_score, -coverage) %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
 
 af.mat = dplyr::select(af_mat, where(is.numeric)) %>% as.matrix()
-af_mat$combo_var = unname(sapply(af_mat$combo_var), shortenNames)
+af_mat$combo_var = unname(sapply(af_mat$combo_var, shortenNames))
 rownames(af.mat) = af_mat$combo_var
 
 ```
