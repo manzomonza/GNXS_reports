@@ -176,6 +176,7 @@ plot_prep_snvindel = function(filepath){
   snv$filepath = filepath
   snv = snv %>% tidyr::unite(gene,amino_acid_change, nucleotide_change, col = "combo_var", sep = "_" )
   return(snv)
+}
   
 shortenNames <- function(characterstring){
   if(nchar(characterstring)>35){
