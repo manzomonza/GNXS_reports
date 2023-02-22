@@ -192,8 +192,6 @@ shortenNames <- function(characterstring){
 plot_prep_table = dplyr::bind_rows(lapply(sfiles, plot_prep_snvindel))
 plot_prep_table$combo_var = gsub("_p\\.\\?",'', plot_prep_table$combo_var)
 plot_prep_table$filepath = unname(sapply(plot_prep_table$filepath, shorten_name))
-
-
 plot_prep_table$allele_frequency = as.numeric(plot_prep_table$allele_frequency)
 af_mat = plot_prep_table %>% dplyr::select(-phred_qual_score, -coverage) %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
 
