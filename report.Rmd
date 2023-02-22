@@ -161,7 +161,8 @@ pheatmap::pheatmap(nonsyn_mat,
 ```
 
 
-```{r}
+```{r, include=FALSE}
+# FUNCTIONS
 plot_prep_snvindel = function(filepath){
   snv = readr::read_tsv(filepath)
   snv = janitor::clean_names(snv)
@@ -175,23 +176,37 @@ plot_prep_snvindel = function(filepath){
   snv$filepath = filepath
   snv = snv %>% tidyr::unite(gene,amino_acid_change, nucleotide_change, col = "combo_var", sep = "_" )
   return(snv)
+  
+shortenNames <- function(characterstring){
+  if(nchar(characterstring)>35){
+    characterstring = substr(characterstring, 1, 35)
+  }
+  return(characterstring)
+}
+
+```
+
+
+```{r}
 }
 plot_prep_table = dplyr::bind_rows(lapply(sfiles, plot_prep_snvindel))
+plot_prep_table$combo_var = gsub("_p\\.\\?",'', plot_prep_table$combo_var)
+plot_prep_table$filepath = unname(sapply(plot_prep_table$filepath, shorten_name))
 
-plot_prep_table$combo_var = gsub("_p\\.\\?",'',plot_prep_table$combo_var)
 
-plot_prep_table$filepath = sapply(plot_prep_table$filepath, shorten_name)
 plot_prep_table$allele_frequency = as.numeric(plot_prep_table$allele_frequency)
 af_mat = plot_prep_table %>% dplyr::select(-phred_qual_score, -coverage) %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
 
 af.mat = dplyr::select(af_mat, where(is.numeric)) %>% as.matrix()
+af_mat$combo_var = unname(sapply(af_mat$combo_var), shortenNames)
 rownames(af.mat) = af_mat$combo_var
+
 ```
 
 ## Clustering of samples
 ```{r}
-na_vector = rowMeans(af.mat)
-mat_hc = overlap_coef_mat(af.mat[is.na(na_vector),])
+na_vector = rowMeans(dataframeme)
+mat_hc = overlap_coef_mat(dataframeme[is.na(na_vector),])
 mat_hc = hclust(as.dist(mat_hc), method = "ward.D2")
 ```
 
@@ -217,7 +232,7 @@ pheatmap::pheatmap(af.mat[is.na(na_vector),],
 ## Coverage / Phred score
 ```{r}
 p = plot_prep_table %>% 
-  ggplot(aes(phred_qual_score, coverage,group=1, text =combo_var)) + 
+  ggplot(aes(coverage,phred_qual_score,group=1, text =combo_var)) + 
   geom_point() + 
   scale_x_log10() + 
   scale_y_log10() + 
