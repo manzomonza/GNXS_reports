@@ -1,7 +1,7 @@
 ---
 title: "GNXS report"
-author: "M. Manzo"
-date: '2023-01-17'
+author: "Molecular Diagnostic Unit -- University Hospital Basel"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 params:
   diroi: ''
