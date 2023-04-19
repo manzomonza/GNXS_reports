@@ -42,11 +42,11 @@ info_files = list.files(path = diroi, recursive = TRUE,
 ```{r}
 library(magrittr)
 sample_info = dplyr::bind_rows(lapply(info_files, extract_info))
-readr::write_tsv(sample_info, paste0(opt$dir,"/GNXS_QC_report/SampleInfoTable.tsv"))
+readr::write_tsv(sample_info, paste0(opt$dir,"/SampleInfoTable.tsv"))
 
 snvs = lapply(sfiles, readin_snvindel)
 preps = dplyr::bind_rows(lapply(prep_files, readin_prepfiles))
-readr::write_tsv(preps,  paste0(opt$dir,"/GNXS_QC_report/Sample_variants_aggretation.tsv"))
+readr::write_tsv(preps,  paste0(opt$dir,"/Sample_variants_aggretation.tsv"))
 
 ```
 
