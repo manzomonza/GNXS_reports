@@ -210,8 +210,9 @@ mat_hc = hclust(as.dist(mat_hc), method = "ward.D2")
 
 ## Sample distance matrix
 ```{r}
+
 pheatmap::pheatmap(overlap_coef_mat(af.mat[is.na(na_vector),]), 
-                        col = rev(ColorBrewer::brewer.pal(5, "RdYlGn")),
+                        col = rev(RColorBrewer::brewer.pal(5, "RdYlGn")),
                         cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = TRUE)
