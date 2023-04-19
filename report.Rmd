@@ -230,8 +230,8 @@ pheatmap::pheatmap(af.mat[is.na(na_vector),],
 
 ```{r}
 af_mat = plot_prep_table %>% 
-  dplyr::filter(vartype == 'nonsyn') %>%
-  dplyr::select(-phred_qual_score, -coverage) %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
+  dplyr::select(-phred_qual_score, -coverage) %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency ) %>% 
+  dplyr::filter(!grepl('=',combo_var))
 
 af.mat = dplyr::select(af_mat, where(is.numeric)) %>% as.matrix()
 af_mat$combo_var = unname(sapply(af_mat$combo_var, shortenNames))
