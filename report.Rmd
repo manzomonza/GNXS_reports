@@ -114,7 +114,7 @@ jacc_distance(names(syns_mat[,1][!is.na(syns_mat[,1])]),
 distance_mat = overlap_coef_mat(tdf)
 mat_hc = hclust(as.dist(distance_mat), method = "ward.D2")
 pheatmap::pheatmap(distance_mat, 
-                        col = viridis::viridis(10, option = "D"),
+                        col = rev(ColorBrewer::brewer.pal(5, "RdYlGn")),
                         cluster_cols = mat_hc,
                         cluster_rows = mat_hc,
                         show_row_names = FALSE)
@@ -227,8 +227,33 @@ pheatmap::pheatmap(af.mat[is.na(na_vector),],
 
 ```
 
-## Coverage / Phred score
+
 ```{r}
+af_mat = plot_prep_table %>% 
+  dplyr::filter(type == 'nonsyn') %>%
+  dplyr::select(-phred_qual_score, -coverage) %>% tidyr::pivot_wider(names_from = filepath, values_from = allele_frequency )
+
+af.mat = dplyr::select(af_mat, where(is.numeric)) %>% as.matrix()
+af_mat$combo_var = unname(sapply(af_mat$combo_var, shortenNames))
+rownames(af.mat) = af_mat$combo_var
+na_vector = rowMeans(af.mat)
+mat_hc = overlap_coef_mat(af.mat[is.na(na_vector),])
+mat_hc = hclust(as.dist(mat_hc), method = "ward.D2")
+```
+
+## Non-synonymous variants only
+```{r, fig.height=10}
+pheatmap::pheatmap(af.mat[is.na(na_vector),], 
+                        col = RColorBrewer::brewer.pal(9, "RdPu"),
+                        cluster_cols = mat_hc,
+                        cluster_rows = FALSE,
+                        show_row_names = TRUE)
+```
+
+
+
+```{r, eval=FALSE}
+## Coverage / Phred score
 p = plot_prep_table %>% 
   ggplot(aes(coverage,phred_qual_score,group=1, text =combo_var)) + 
   geom_point() + 
